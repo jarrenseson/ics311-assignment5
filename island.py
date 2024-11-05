@@ -2,11 +2,11 @@ import heapq
 from collections import deque, defaultdict
 
 class Island:
-    def __init__(self, name, population, activityTime):
+    def __init__(self, name, population, activities):
         self.name = name
         self.population = population
         self.last_visited = -float('inf')  # Initialize to a very old timestamp
-        self.activityTime = activityTime
+        self.activities = activities
 
     def __repr__(self):
         return f"Island(name={self.name}, population={self.population})"
@@ -25,25 +25,46 @@ class WeightedGraph:
         self.graph[u].append((v, weight))
         self.graph[v].append((u, weight))
 
-def dijkstra(graph, start):
-    distances = {node: float('inf') for node in graph.graph}
-    distances[start] = 0
-    pq = [(0, start)]
+def optimizeActivities(graph, start, time_budget):
+    max_activities = 0
+    best_path = []
+    counter = 0 
+    
+    pq = [(0, counter, start, [], 0, set())] 
+    counter += 1
     
     while pq:
-        current_distance, current_node = heapq.heappop(pq)
-        if current_distance > distances[current_node]:
-            continue
+        current_time, _, current_node, path, activities_count, visited_nodes = heapq.heappop(pq)
         
-        for neighbor, weight in graph.graph[current_node]:
-            distance = current_distance + weight
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                heapq.heappush(pq, (distance, neighbor))
-    
-    return distances
+        if current_time > time_budget:
+            continue
 
-def optimizeActivities(graph, start):
+        if activities_count > max_activities:
+            max_activities = activities_count
+            best_path = path
+
+        for neighbor, travel_time in graph.graph[current_node]:
+            if neighbor in visited_nodes:
+                continue
+            
+            next_time = current_time + travel_time
+            new_activities_count = activities_count
+            
+            for activity, enjoyment_time in neighbor.activities:
+                if next_time + enjoyment_time <= time_budget:
+                    next_time += enjoyment_time
+                    new_activities_count += 1
+            
+            new_visited = visited_nodes | {neighbor}  
+            new_path = path + [neighbor]  
+            
+            heapq.heappush(pq, (next_time, counter, neighbor, new_path, new_activities_count, new_visited))
+            counter += 1
+    
+    return best_path, max_activities
+
+'''
+def dijkstra(graph, start):
     distances = {node: float('inf') for node in graph.graph}
     distances[start] = 0
     pq = [(0, start)]
@@ -127,6 +148,15 @@ def distribute_resources(graph, source, resources, canoes, allocator, journey_tr
             if resource_tracker.get_resources(island) > 0:
                 allocator.allocate(island, distances[island])
 
+
+island_tahiti = Island("Tahiti", 205980, 10)
+island_fiji = Island("Fiji", 902503, 2)
+island_samoa = Island("Samoa", 196628, 1)
+island_tonga = Island("Tonga", 104494, 19)
+island_hawaii = Island("Hawaii", 1453138, 20)
+island_niue = Island("Niue", 1600, 40)
+island_cook_islands = Island("Cook Islands", 14222, 43)
+
 graph = WeightedGraph()
 graph.add_edge('IslandA', 'IslandB', 2)
 graph.add_edge('IslandA', 'IslandC', 5)
@@ -148,3 +178,4 @@ for i in range(1, canoes + 1):
     journey_tracker.add_canoe(i)
 
 distribute_resources(graph, 'IslandA', resources, canoes, allocator, journey_tracker, resource_tracker)
+'''
