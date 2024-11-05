@@ -1,6 +1,22 @@
 import heapq
 from collections import deque, defaultdict
 
+class Island:
+    def __init__(self, name, population, activityTime):
+        self.name = name
+        self.population = population
+        self.last_visited = -float('inf')  # Initialize to a very old timestamp
+        self.activityTime = activityTime
+
+    def __repr__(self):
+        return f"Island(name={self.name}, population={self.population})"
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
+
 class WeightedGraph:
     def __init__(self):
         self.graph = defaultdict(list)
@@ -10,6 +26,24 @@ class WeightedGraph:
         self.graph[v].append((u, weight))
 
 def dijkstra(graph, start):
+    distances = {node: float('inf') for node in graph.graph}
+    distances[start] = 0
+    pq = [(0, start)]
+    
+    while pq:
+        current_distance, current_node = heapq.heappop(pq)
+        if current_distance > distances[current_node]:
+            continue
+        
+        for neighbor, weight in graph.graph[current_node]:
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                heapq.heappush(pq, (distance, neighbor))
+    
+    return distances
+
+def optimizeActivities(graph, start):
     distances = {node: float('inf') for node in graph.graph}
     distances[start] = 0
     pq = [(0, start)]
